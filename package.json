@@ -1,0 +1,16 @@
+{
+  "name": "tidal-bot",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "docker build -t tidal-bot .",
+    "start": "docker run -it --name mmmm_juicy -p 8000:8000 --rm tidal-bot",
+    "shell": "docker run -it --name mmmm_juicy -p 8000:8000 --entrypoint=bash tidal-bot",
+    "inspect": "docker exec -it mmmm_juicy bash"
+  },
+  "description": "",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^10.5.0",
+    "discord.js": "^11.3.2"
+  }
+}
