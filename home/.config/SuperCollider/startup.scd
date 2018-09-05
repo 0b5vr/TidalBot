@@ -1,6 +1,6 @@
 "SC_JACK_DEFAULT_OUTPUTS".setenv(
-  "darkice:left,"
-  "darkice:right,"
+  "node:left,"
+  "node:right,"
 );
 
 ServerQuit.add( {

@@ -1,21 +1,52 @@
+// == setup discord ============================================================
 const Discord = require( 'discord.js' );
 const client = new Discord.Client();
 
-const lame = require( 'lame' );
-const icy = require( 'icy' );
-
-const Tidal = require( './tidal' );
-let tidal = new Tidal();
-let lastTextChannel = null;
-let currentConnecton = null;
-
-// == setup discord ============================================================
 client.on( 'ready', () => {
   console.log( 'Discord bot is working!' );
   client.user.setPresence( {
     status: 'idle'
   } );
 } );
+
+let lastTextChannel = null;
+let currentConnection = null;
+
+// == setup jack ===============================================================
+const jack = require( 'jack-connector' );
+
+const BUFFER_LENGTH = 65536;
+const streamArray = [];
+
+const stream = new require( 'stream' ).Readable( {
+  read( size ) {
+    if ( size / 2 < streamArray.length ) {
+      this.push( Buffer.from(
+        new Int16Array( streamArray.splice( 0, size / 2 ) ).buffer
+      ) );
+    } else {
+      this.push( Buffer.alloc( size ) );
+    }
+  }
+} );
+
+jack.openClientSync( 'node' );
+jack.registerInPortSync( 'left' );
+jack.registerInPortSync( 'right' );
+
+jack.bindProcessSync( ( error, nFrames, capture ) => {
+  for ( let i = 0; i < nFrames; i ++ ) {
+    if ( BUFFER_LENGTH <= streamArray.length ) { break; }
+    streamArray.push( parseInt( capture.left[ i ] * 32767 ) );
+    streamArray.push( parseInt( capture.right[ i ] * 32767 ) );
+  }
+} );
+
+jack.activateSync();
+
+// == setup tidal ==============================================================
+const Tidal = require( './tidal' );
+let tidal = new Tidal();
 
 // == log handler ==============================================================
 tidal.on( 'log', ( msg ) => {
@@ -28,7 +59,9 @@ tidal.on( 'log', ( msg ) => {
 const scLogHandler = ( msg ) => {
   if ( msg.toString() === 'tidal-sc-log' ) {
     console.log(tidal.getScLog());
-    msg.channel.send( `🌀 SuperCollider stdout / stderr:\n\`\`\`\n${tidal.getScLog()}\n\`\`\`` );
+    msg.channel.send(
+      `🌀 SuperCollider stdout / stderr:\n\`\`\`\n${tidal.getScLog()}\n\`\`\``
+    );
     return true;
   }
   return false;
@@ -48,7 +81,7 @@ const messageHandler = ( msg ) => {
   console.log( code );
 
   const guild = msg.guild;
-  if ( !currentConnecton ) {
+  if ( !currentConnection ) {
     const user = msg.author;
 
     let nope = true;
@@ -59,22 +92,22 @@ const messageHandler = ( msg ) => {
       ) {
         nope = false;
         ch.join().then( ( conn ) => {
-          currentConnecton = conn;
-          msg.reply( `\n🛰 I joined to ${currentConnecton.channel} !` );
+          currentConnection = conn;
+          msg.reply( `\n🛰 I joined to ${currentConnection.channel} !` );
           client.user.setPresence( {
             game: { name: 'TidalCycles' },
             status: 'online'
           } );
 
           // == stream audio ===================================================
-          let decoder = new lame.Decoder();
-          icy.get( 'http://localhost:8000/stream.mp3', ( res ) => {
-            currentConnecton.playStream( res );
-          } );
+          currentConnection.playConvertedStream( stream );
 
           // == when all members left... =======================================
           let update = () => {
-            let isAnyoneThere = ch.members.some( ( u ) => u.id !== client.user.id );
+            let isAnyoneThere = ch.members.some(
+              ( u ) => u.id !== client.user.id
+            );
+
             if ( !isAnyoneThere ) {
               if ( lastTextChannel ) {
                 lastTextChannel.send( '👋 All users left, bye' );
@@ -82,15 +115,15 @@ const messageHandler = ( msg ) => {
                 tidal.hush();
               }
 
-              currentConnecton.disconnect();
-              currentConnecton = null;
+              currentConnection.disconnect();
+              currentConnection = null;
               client.user.setPresence( {
                 status: 'idle'
               } );
             }
 
-            if ( currentConnecton ) {
-              setTimeout( update, 10000 );
+            if ( currentConnection ) {
+              setTimeout( update, 5000 );
             }
           };
           update();
@@ -102,7 +135,7 @@ const messageHandler = ( msg ) => {
       msg.reply( '\n🤔 You seem not to be in any VC???' );
       return;
     }
-  } else if ( currentConnecton.channel.guild !== msg.guild ) {
+  } else if ( currentConnection.channel.guild !== msg.guild ) {
     msg.reply( '\n🙇 I\'m currently on an another server!' );
     return;
   }

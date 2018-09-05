@@ -98,7 +98,7 @@ RUN rm -rf ffmpeg*
 # == setup node app ============================================================
 WORKDIR $HOME/app
 RUN npm install -g forever
-RUN npm install discord.js node-opus lame icy
+RUN npm install discord.js node-opus fms-cat/node-jack-connector#master
 
 # == send some files ===========================================================
 ADD ./home $HOME
