@@ -41,7 +41,7 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 RUN sudo apt-get install -y nodejs
 RUN apt clean
 
-# == build supercollider =======================================================
+# == build SuperCollider =======================================================
 # Ref: https://github.com/ikag/docker-images/blob/master/supercollider/Dockerfile
 # Ref: https://github.com/supercollider/supercollider/wiki/Installing-SuperCollider-from-source-on-Ubuntu
 # Ref: https://github.com/supercollider/sc3-plugins
@@ -69,9 +69,11 @@ RUN cmake --build . --config Release --target install
 WORKDIR $HOME
 RUN rm -rf sc3-plugins supercollider
 
+# == pull SuperDirt and its samples ============================================
+RUN echo 'include( "https://github.com/FMS-Cat/Dirt-Samples" );' | sclang
 RUN echo 'include( "SuperDirt" );' | sclang
 
-# == install tidal and modules =================================================
+# == install Tidal and modules =================================================
 WORKDIR $HOME
 RUN cabal update
 RUN cabal install tidal
@@ -91,14 +93,21 @@ RUN cp ./ffmpeg*64bit-static/ffmpeg /usr/local/bin/
 RUN rm -rf ffmpeg*
 
 # == setup node app ============================================================
+ADD ./home/app/package.json $HOME/app/package.json
 WORKDIR $HOME/app
-RUN npm install -g forever
-RUN npm install discord.js node-opus fms-cat/node-jack-connector#master
+RUN npm install -g node-gyp yarn
+RUN yarn
 
 # == send some files ===========================================================
 ADD ./home $HOME
 
-# == I think it's done =========================================================
+# == build jack-audio ==========================================================
+WORKDIR $HOME/jack-audio
+RUN yarn
+RUN yarn build
+RUN mv ./build/Release/jack-audio.node $HOME/app
 WORKDIR $HOME
-EXPOSE 8000
+RUN rm -rf jack-audio
+
+# == I think it's done =========================================================
 CMD supervisord -c supervisor.conf

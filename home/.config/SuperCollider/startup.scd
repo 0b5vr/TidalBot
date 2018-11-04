@@ -1,6 +1,6 @@
 "SC_JACK_DEFAULT_OUTPUTS".setenv(
-  "node:left,"
-  "node:right,"
+  "node:inL,"
+  "node:inR,"
 );
 
 ServerQuit.add( {

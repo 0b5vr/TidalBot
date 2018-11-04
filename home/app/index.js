@@ -13,8 +13,6 @@ let lastTextChannel = null;
 let currentConnection = null;
 
 // == setup jack ===============================================================
-const jack = require( 'jack-connector' );
-
 const BUFFER_LENGTH = 65536;
 const streamArray = [];
 
@@ -30,19 +28,15 @@ const stream = new require( 'stream' ).Readable( {
   }
 } );
 
-jack.openClientSync( 'node' );
-jack.registerInPortSync( 'left' );
-jack.registerInPortSync( 'right' );
-
-jack.bindProcessSync( ( error, nFrames, capture ) => {
+const jack = require( './jack-audio' );
+jack.bind( ( nFrames, buffer ) => {
   for ( let i = 0; i < nFrames; i ++ ) {
     if ( BUFFER_LENGTH <= streamArray.length ) { break; }
-    streamArray.push( parseInt( capture.left[ i ] * 32767 ) );
-    streamArray.push( parseInt( capture.right[ i ] * 32767 ) );
+    streamArray.push( parseInt( buffer[ 0 ][ i ] * 32767 ) );
+    streamArray.push( parseInt( buffer[ 1 ][ i ] * 32767 ) );
   }
 } );
-
-jack.activateSync();
+jack.start( 'node' );
 
 // == setup tidal ==============================================================
 const Tidal = require( './tidal' );
