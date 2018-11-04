@@ -141,7 +141,7 @@ const messageHandler = ( msg ) => {
 client.on( 'message', ( msg ) => messageHandler( msg ) );
 client.on( 'messageUpdate', ( _, msg ) => messageHandler( msg ) );
 
-client.login( process.env.DISCORD_TOKEN );
+client.login( process.env.TIDALBOT_TOKEN );
 process.on( 'SIGTERM', () => {
   client.destroy().then( () => {
     process.exit();
