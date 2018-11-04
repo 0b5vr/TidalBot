@@ -1,6 +1,7 @@
 {
   "name": "tidal-bot",
   "version": "1.0.0",
+  "license": "MIT",
   "dependencies": {
     "discord.js": "^11.4.2",
     "opusscript": "^0.0.6"

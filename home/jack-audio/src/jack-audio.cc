@@ -1,5 +1,4 @@
 // == includes =================================================================
-#include <stdio.h>
 #include <nan.h>
 #include <jack/jack.h>
 
@@ -105,9 +104,6 @@ void jackShutdown( void *arg )
  */
 NAN_METHOD( nodeStart )
 {
-  v8::Local<v8::Array> send = Nan::New<v8::Array>( 8 );
-  fprintf( stdout, "%d\n", send->Length() );
-
   // argument check
   if ( info.Length() < 1 ) {
     Nan::ThrowTypeError( "1 argument is required" );
@@ -194,6 +190,7 @@ NAN_METHOD( nodeBind )
   gOnProcess.Reset( Nan::To<v8::Function>( info[ 0 ] ).ToLocalChecked() );
 }
 
+// == bind methods and done ====================================================
 NAN_MODULE_INIT( init )
 {
   Nan::SetMethod( target, "start", nodeStart );

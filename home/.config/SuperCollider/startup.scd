@@ -20,7 +20,6 @@ s.waitForBoot {
   ~dirt.start( 57120, [ 0, 0 ] );
   s.sync;
 
-  ~dirt.loadSoundFiles;   // load samples (path containing a wildcard can be passed in)
-  // for example: ~dirt.loadSoundFiles("/Users/myUserName/Dirt/samples/*");
+  ~dirt.loadSoundFiles;
   s.sync;
 }

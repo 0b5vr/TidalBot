@@ -89,7 +89,7 @@ const Tidal = class {
       const append = ( msg ) => {
         this.scLog += msg;
 
-        let lines = this.scLog.split( '\n' );
+        const lines = this.scLog.split( '\n' );
         if ( 10 < lines.length ) {
           this.scLog = lines.splice( lines.length - 10 ).join( '\n' )
         }

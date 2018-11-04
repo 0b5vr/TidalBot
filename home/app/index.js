@@ -40,7 +40,7 @@ jack.start( 'node' );
 
 // == setup tidal ==============================================================
 const Tidal = require( './tidal' );
-let tidal = new Tidal();
+const tidal = new Tidal();
 
 // == log handler ==============================================================
 tidal.on( 'log', ( msg ) => {
@@ -98,8 +98,8 @@ const messageHandler = ( msg ) => {
           currentConnection.playConvertedStream( stream );
 
           // == when all members left... =======================================
-          let update = () => {
-            let isAnyoneThere = ch.members.some(
+          const update = () => {
+            const isAnyoneThere = ch.members.some(
               ( u ) => u.id !== client.user.id
             );
 
@@ -141,7 +141,7 @@ const messageHandler = ( msg ) => {
 client.on( 'message', ( msg ) => messageHandler( msg ) );
 client.on( 'messageUpdate', ( _, msg ) => messageHandler( msg ) );
 
-client.login( 'NDYxOTE1MzA1NTUyMzc5OTA0.DhaPww.iDr9SAbbo4aPqOIw_5rW14IscqY' );
+client.login( process.env.DISCORD_TOKEN );
 process.on( 'SIGTERM', () => {
   client.destroy().then( () => {
     process.exit();

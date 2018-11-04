@@ -4,8 +4,8 @@
   "scripts": {
     "build": "docker build -t tidal-bot .",
     "cleanbuild": "docker build --no-cache -t tidal-bot .",
-    "start": "docker run -it --name mmmm_juicy -p 8000:8000 --rm tidal-bot",
-    "shell": "docker run -it --name mmmm_juicy -p 8000:8000 --entrypoint=bash tidal-bot",
+    "start": "docker run -it --env-file .env --name mmmm_juicy --rm tidal-bot",
+    "shell": "docker run -it --env-file .env --name mmmm_juicy --entrypoint=bash tidal-bot",
     "inspect": "docker exec -it mmmm_juicy bash"
   },
   "devDependencies": {
