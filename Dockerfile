@@ -8,9 +8,9 @@ ENV HOME /root
 # Ref: https://github.com/ikag/docker-images/blob/master/supercollider/Dockerfile
 # Ref: https://github.com/lvm/tida1vm/blob/0.9/Dockerfile
 # Ref: https://github.com/maxhawkins/sc_radio/blob/master/Dockerfile
-RUN apt update
-RUN apt -y upgrade
-RUN DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends \
+RUN apt-get update
+RUN apt-get -y upgrade
+RUN apt-get install -y --no-install-recommends \
     sudo \
     supervisor \
     autoconf \
@@ -37,9 +37,14 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends \
     cabal-install \
     ghc
 
+# == deal with nodejs ==========================================================
 RUN curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 RUN sudo apt-get install -y nodejs
-RUN apt clean
+RUN npm install -g node-gyp
+
+# == bye apt ===================================================================
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/*
 
 # == build SuperCollider =======================================================
 # Ref: https://github.com/ikag/docker-images/blob/master/supercollider/Dockerfile
@@ -95,16 +100,16 @@ RUN rm -rf ffmpeg*
 # == setup node app ============================================================
 ADD ./home/app/package.json $HOME/app/package.json
 WORKDIR $HOME/app
-RUN npm install -g node-gyp yarn
-RUN yarn
+RUN npm i
 
 # == send some files ===========================================================
 ADD ./home $HOME
 
 # == build jack-audio ==========================================================
 WORKDIR $HOME/jack-audio
-RUN yarn
-RUN yarn build
+RUN npm i
+RUN node-gyp configure
+RUN node-gyp build
 RUN mv ./build/Release/jack-audio.node $HOME/app
 WORKDIR $HOME
 RUN rm -rf jack-audio
