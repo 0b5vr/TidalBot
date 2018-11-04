@@ -29,44 +29,36 @@ const Tidal = class {
     this.dead = false;
 
     // == setup sclang =========================================================
-    let cpSc = cp.spawn( 'sclang' );
+    this.cpSc = cp.spawn( 'sclang' );
 
-    cpSc.stderr.on( 'data', ( data ) => {
-      const msg = data.toString( 'utf8' );
-      this.emit( 'sc-stderr', msg );
+    this.cpSc.stderr.on( 'data', ( data ) => {
+      this.emit( 'sc-stderr', data.toString( 'utf8' ) );
     } );
 
-    cpSc.stdout.on( 'data', ( data ) => {
-      const msg = data.toString( 'utf8' );
-      this.emit( 'sc-stdout', msg );
+    this.cpSc.stdout.on( 'data', ( data ) => {
+      this.emit( 'sc-stdout', data.toString( 'utf8' ) );
     } );
 
-    this.cpSc = cpSc;
+    // == setup ghci ===========================================================
+    this.cpGhci = cp.spawn( 'ghci', [ '-XOverloadedStrings' ] );
 
-    // == setup ghci =========================================================
-    let cpGhci = cp.spawn( 'ghci', [ '-XOverloadedStrings' ] );
-
-    cpGhci.stderr.on( 'data', ( data ) => {
-      const msg = data.toString( 'utf8' );
-      this.emit( 'tidal-stderr', msg );
+    this.cpGhci.stderr.on( 'data', ( data ) => {
+      this.emit( 'tidal-stderr', data.toString( 'utf8' ) );
     } );
 
-    cpGhci.stdout.on( 'data', ( data ) => {
-      const msg = data.toString( 'utf8' );
-      this.emit( 'tidal-stdout', msg );
+    this.cpGhci.stdout.on( 'data', ( data ) => {
+      this.emit( 'tidal-stdout', data.toString( 'utf8' ) );
     } );
 
-    this.cpGhci = cpGhci;
-
-    // == execute bootup commands ============================================
+    // == execute bootup commands ==============================================
     tidalBootstrap.split( '\n' ).map( ( line ) => {
       this.sendLine( line );
     } );
 
-    // == ready! =============================================================
+    // == ready! ===============================================================
     this.emit( 'ready' );
 
-    // == chunky tidal stdout ================================================
+    // == chunky tidal stdout ==================================================
     {
       let str = '';
       let date = 0;
@@ -135,6 +127,8 @@ const Tidal = class {
   }
 
   hush () {
+    if ( this.dead ) { return; }
+
     this.evaluate( 'hush' );
     this.emit( 'hush' );
   }
