@@ -18,12 +18,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends \
     libtool \
     build-essential \
     libsndfile1-dev \
-    icecast2 \
-    darkice \
     libasound2-dev \
-    libasound2-plugins \
-    alsa-base \
-    alsa-utils \
     libavahi-client-dev \
     libicu-dev \
     libreadline6-dev \

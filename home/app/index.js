@@ -57,10 +57,9 @@ tidal.on( 'log', ( msg ) => {
 
 // == sclog handler ============================================================
 const scLogHandler = ( msg ) => {
-  if ( msg.toString() === 'tidal-sc-log' ) {
-    console.log(tidal.getScLog());
+  if ( msg.toString().includes( 'sc-log' ) ) {
     msg.channel.send(
-      `🌀 SuperCollider stdout / stderr:\n\`\`\`\n${tidal.getScLog()}\n\`\`\``
+      `🌀 SuperCollider stdout / stderr:\n\`\`\`\n${ tidal.getScLog() }\n\`\`\``
     );
     return true;
   }
@@ -70,11 +69,13 @@ const scLogHandler = ( msg ) => {
 // == uh =======================================================================
 const messageHandler = ( msg ) => {
   lastTextChannel = msg.channel;
-  const str = msg.toString();
+  const mentioned = msg.mentions.users.some( ( u ) => u.id === client.user.id );
+  if ( !mentioned ) { return; }
 
   if ( scLogHandler( msg ) ) { return; }
 
-  const match = str.match( /^tidal\s*```\s*([\S\s]+?)\s*```$/m );
+  const str = msg.toString();
+  const match = str.match( /```\s*([\S\s]+?)\s*```/m );
   if ( !match ) { return; }
 
   const code = match[ 1 ];
