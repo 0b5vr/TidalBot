@@ -31,6 +31,7 @@ RUN apt-get install -y --no-install-recommends \
     cmake \
     jackd2 \
     libjack-jackd2-dev \
+    ffmpeg \
     haskell-mode \
     zlib1g-dev \
     liblo7 \
@@ -88,14 +89,6 @@ WORKDIR $HOME/tidal-drum-patterns
 RUN cabal clean && cabal configure && cabal build && cabal install
 WORKDIR $HOME
 RUN rm -rf tidal-drum-patterns
-
-# == fetch ffmpeg (already built one!) =========================================
-# Ref: https://qiita.com/flny/items/798547356dcc47239702
-WORKDIR $HOME
-RUN wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
-RUN tar Jxvf ./ffmpeg-release-64bit-static.tar.xz
-RUN cp ./ffmpeg*64bit-static/ffmpeg /usr/local/bin/
-RUN rm -rf ffmpeg*
 
 # == setup node app ============================================================
 ADD ./home/app/package.json $HOME/app/package.json
