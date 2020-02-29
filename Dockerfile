@@ -9,9 +9,7 @@ ENV HOME /root
 # Ref: https://github.com/lvm/tida1vm/blob/0.9/Dockerfile
 # Ref: https://github.com/maxhawkins/sc_radio/blob/master/Dockerfile
 RUN apt-get update
-RUN apt-get -y upgrade
 RUN apt-get install -y --no-install-recommends \
-    sudo \
     supervisor \
     autoconf \
     automake \
@@ -20,6 +18,7 @@ RUN apt-get install -y --no-install-recommends \
     libsndfile1-dev \
     libasound2-dev \
     libavahi-client-dev \
+    libgmp3-dev \
     libicu-dev \
     libreadline6-dev \
     libfftw3-dev \
@@ -34,14 +33,16 @@ RUN apt-get install -y --no-install-recommends \
     ffmpeg \
     haskell-mode \
     zlib1g-dev \
-    liblo7 \
-    cabal-install \
-    ghc
+    liblo7
 
 # == deal with nodejs ==========================================================
-RUN curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-RUN sudo apt-get install -y nodejs
+RUN curl -sL https://deb.nodesource.com/setup_13.x | bash -
+RUN apt-get install -y nodejs
 RUN npm install -g node-gyp
+
+# == install stack =============================================================
+RUN curl -sL https://get.haskellstack.org/ | bash -
+RUN stack update
 
 # == bye apt ===================================================================
 RUN apt-get clean
@@ -52,7 +53,7 @@ RUN rm -rf /var/lib/apt/lists/*
 # Ref: https://github.com/supercollider/supercollider/wiki/Installing-SuperCollider-from-source-on-Ubuntu
 # Ref: https://github.com/supercollider/sc3-plugins
 WORKDIR $HOME
-RUN git clone --recursive https://github.com/supercollider/supercollider.git
+RUN git clone --depth=1 -b Version-3.10.3 --recursive https://github.com/supercollider/supercollider.git
 WORKDIR $HOME/supercollider
 RUN git submodule update --init
 RUN mkdir -p $HOME/supercollider/build
@@ -79,21 +80,17 @@ RUN rm -rf sc3-plugins supercollider
 RUN echo 'include( "https://github.com/FMS-Cat/Dirt-Samples" );' | sclang
 RUN echo 'include( "SuperDirt" );' | sclang
 
-# == install Tidal and modules =================================================
-WORKDIR $HOME
-RUN cabal update
-RUN cabal install tidal
-
-RUN git clone https://github.com/lvm/tidal-drum-patterns.git
-WORKDIR $HOME/tidal-drum-patterns
-RUN cabal clean && cabal configure && cabal build && cabal install
-WORKDIR $HOME
-RUN rm -rf tidal-drum-patterns
-
 # == setup node app ============================================================
 ADD ./home/app/package.json $HOME/app/package.json
-WORKDIR $HOME/app
 RUN npm i
+
+# == setup stack, install Tidal ================================================
+WORKDIR $HOME/app
+RUN stack setup
+RUN stack install tidal-1.4.8
+
+# == download BootTidal ========================================================
+RUN curl -sL https://raw.githubusercontent.com/tidalcycles/atom-tidalcycles/8467fa57b766306ddd8d00a7d95cc9dc5f76dbdc/lib/BootTidal.hs > $HOME/app/BootTidal.hs
 
 # == send some files ===========================================================
 ADD ./home $HOME

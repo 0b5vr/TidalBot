@@ -1,3 +1,5 @@
+const path = require( 'path' );
+
 // == setup discord ============================================================
 const Discord = require( 'discord.js' );
 const client = new Discord.Client();
@@ -40,7 +42,7 @@ jack.start( 'node' );
 
 // == setup tidal ==============================================================
 const Tidal = require( './tidal' );
-const tidal = new Tidal();
+const tidal = new Tidal( path.resolve( __dirname, 'BootTidal.hs' ) );
 
 // == log handler ==============================================================
 tidal.on( 'log', ( msg ) => {
