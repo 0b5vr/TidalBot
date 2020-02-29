@@ -141,6 +141,7 @@ const Tidal = class {
   }
 
   kill () {
+    this.cpSc.kill();
     this.cpGhci.kill();
     this.dead = true;
 
