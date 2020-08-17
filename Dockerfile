@@ -87,7 +87,7 @@ RUN npm i
 # == setup stack, install Tidal ================================================
 WORKDIR $HOME/app
 RUN stack setup
-RUN stack install tidal-1.6.1
+RUN stack install tidal-1.5.2
 
 # == download BootTidal ========================================================
 RUN curl -sL https://raw.githubusercontent.com/tidalcycles/atom-tidalcycles/ab71768ff27bc427abab17977fc465d80041fdc2/lib/BootTidal.hs > $HOME/app/BootTidal.hs
