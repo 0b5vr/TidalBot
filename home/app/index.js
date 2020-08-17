@@ -63,6 +63,9 @@ const scLogHandler = ( msg ) => {
 };
 
 // == uh =======================================================================
+/**
+ * @param {Discord.Message} msg
+ */
 const messageHandler = ( msg ) => {
   lastTextChannel = msg.channel;
   const mentioned = msg.mentions.users.some( ( u ) => u.id === client.user.id );
@@ -82,7 +85,7 @@ const messageHandler = ( msg ) => {
     const user = msg.author;
 
     let nope = true;
-    guild.channels.map( ( ch ) => {
+    guild.channels.cache.map( ( ch ) => {
       if (
         ch.speakable && ch.joinable
         && ch.members.some( ( u ) => u.id === user.id )
