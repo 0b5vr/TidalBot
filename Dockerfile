@@ -36,7 +36,7 @@ RUN apt-get install -y --no-install-recommends \
     liblo7
 
 # == deal with nodejs ==========================================================
-RUN curl -sL https://deb.nodesource.com/setup_13.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y nodejs
 RUN npm install -g node-gyp
 
@@ -53,7 +53,7 @@ RUN rm -rf /var/lib/apt/lists/*
 # Ref: https://github.com/supercollider/supercollider/wiki/Installing-SuperCollider-from-source-on-Ubuntu
 # Ref: https://github.com/supercollider/sc3-plugins
 WORKDIR $HOME
-RUN git clone --depth=1 -b Version-3.10.3 --recursive https://github.com/supercollider/supercollider.git
+RUN git clone --depth=1 -b Version-3.11.0 --recursive https://github.com/supercollider/supercollider.git
 WORKDIR $HOME/supercollider
 RUN git submodule update --init
 RUN mkdir -p $HOME/supercollider/build
@@ -87,10 +87,10 @@ RUN npm i
 # == setup stack, install Tidal ================================================
 WORKDIR $HOME/app
 RUN stack setup
-RUN stack install tidal-1.4.8
+RUN stack install tidal-1.6.1
 
 # == download BootTidal ========================================================
-RUN curl -sL https://raw.githubusercontent.com/tidalcycles/atom-tidalcycles/8467fa57b766306ddd8d00a7d95cc9dc5f76dbdc/lib/BootTidal.hs > $HOME/app/BootTidal.hs
+RUN curl -sL https://raw.githubusercontent.com/tidalcycles/atom-tidalcycles/ab71768ff27bc427abab17977fc465d80041fdc2/lib/BootTidal.hs > $HOME/app/BootTidal.hs
 
 # == send some files ===========================================================
 ADD ./home $HOME
