@@ -15,17 +15,31 @@ let lastTextChannel = null;
 let currentConnection = null;
 
 // == setup jack ===============================================================
-const BUFFER_LENGTH = 65536;
-const streamArray = [];
+const BUFFER_SIZE = Math.pow( 2, 16 );
+const CHUNK_SIZE = 256;
+
+let streamReadIndex = 0;
+let streamWriteIndex = 0;
+let streamBufferSize = 0;
+const streamBuffer = new Int16Array( BUFFER_SIZE );
 
 const stream = new require( 'stream' ).Readable( {
   read( size ) {
-    if ( size / 2 < streamArray.length ) {
-      this.push( Buffer.from(
-        new Int16Array( streamArray.splice( 0, size / 2 ) ).buffer
-      ) );
-    } else {
-      this.push( Buffer.alloc( size ) );
+    for ( let i = 0; i < size / 2 / CHUNK_SIZE; i ++ ) {
+      if ( CHUNK_SIZE < streamBufferSize ) {
+        this.push( Buffer.from( streamBuffer.buffer, streamReadIndex * 2, CHUNK_SIZE * 2 ) );
+
+        streamReadIndex = ( streamReadIndex + CHUNK_SIZE ) % BUFFER_SIZE;
+        streamBufferSize -= CHUNK_SIZE;
+
+        // fast forward
+        if ( BUFFER_SIZE * 0.75 < streamBufferSize ) {
+          streamReadIndex = ( streamReadIndex + CHUNK_SIZE ) % BUFFER_SIZE;
+          streamBufferSize -= CHUNK_SIZE;
+        }
+      } else {
+        this.push( Buffer.alloc( CHUNK_SIZE * 2 ) );
+      }
     }
   }
 } );
@@ -33,9 +47,11 @@ const stream = new require( 'stream' ).Readable( {
 const jack = require( './jack-audio' );
 jack.bind( ( nFrames, buffer ) => {
   for ( let i = 0; i < nFrames; i ++ ) {
-    if ( BUFFER_LENGTH <= streamArray.length ) { break; }
-    streamArray.push( parseInt( buffer[ 0 ][ i ] * 32767 ) );
-    streamArray.push( parseInt( buffer[ 1 ][ i ] * 32767 ) );
+    if ( BUFFER_SIZE <= streamBufferSize ) { break; }
+    streamBuffer[ streamWriteIndex + 0 ] = parseInt( buffer[ 0 ][ i ] * 32767 );
+    streamBuffer[ streamWriteIndex + 1 ] = parseInt( buffer[ 1 ][ i ] * 32767 );
+    streamWriteIndex = ( streamWriteIndex + 2 ) % BUFFER_SIZE;
+    streamBufferSize += 2;
   }
 } );
 jack.start( 'node' );
