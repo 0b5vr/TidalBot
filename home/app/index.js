@@ -96,6 +96,12 @@ const messageHandler = ( msg ) => {
   const code = match[ 1 ];
   console.log( code );
 
+  // temp: to prevent dangerous things
+  if ( code.includes( 'import' ) ) {
+    msg.reply( '\n<@232233105040211969>' );
+    return;
+  }
+
   const guild = msg.guild;
   if ( !currentConnection ) {
     const user = msg.author;
