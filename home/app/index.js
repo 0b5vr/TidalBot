@@ -100,7 +100,7 @@ const messageHandler = ( msg ) => {
           } );
 
           // == stream audio ===================================================
-          currentConnection.playConvertedStream( stream );
+          currentConnection.play( stream, { type: 'converted', volume: false, highWaterMark: 1 } );
 
           // == when all members left... =======================================
           const update = () => {
