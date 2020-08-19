@@ -91,7 +91,11 @@ const messageHandler = ( msg ) => {
 
   const str = msg.toString();
   const match = str.match( /```\s*([\S\s]+?)\s*```/m );
-  if ( !match ) { return; }
+
+  if ( !match ) {
+    msg.reply( '\n🤔 Unrecognized. Make sure your code is inside of a code block (use triple backquotes)!' );
+    return;
+  }
 
   const code = match[ 1 ];
   console.log( code );
