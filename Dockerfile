@@ -1,4 +1,4 @@
-FROM phusion/baseimage:latest
+FROM phusion/baseimage:master
 
 # == define ENV_VARS ===========================================================
 ENV LANG C.UTF-8
