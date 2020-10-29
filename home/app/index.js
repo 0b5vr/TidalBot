@@ -109,7 +109,7 @@ const messageHandler = ( msg ) => {
 
   // it cannot be in two servers at once
   const guild = msg.guild;
-  if ( currentConnection?.channel.guild !== msg.guild ) {
+  if ( currentConnection && currentConnection.channel.guild !== msg.guild ) {
     msg.reply( '\n🙇 I\'m currently on an another server!' );
     return;
   }
