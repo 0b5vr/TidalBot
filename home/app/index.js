@@ -83,9 +83,10 @@ const scLogHandler = ( msg ) => {
  * @param {Discord.Message} msg
  */
 const messageHandler = ( msg ) => {
-  lastTextChannel = msg.channel;
   const mentioned = msg.mentions.users.some( ( u ) => u.id === client.user.id );
   if ( !mentioned ) { return; }
+
+  lastTextChannel = msg.channel;
 
   if ( scLogHandler( msg ) ) { return; }
 
