@@ -86,8 +86,6 @@ const messageHandler = ( msg ) => {
   const mentioned = msg.mentions.users.some( ( u ) => u.id === client.user.id );
   if ( !mentioned ) { return; }
 
-  lastTextChannel = msg.channel;
-
   if ( scLogHandler( msg ) ) { return; }
 
   const str = msg.toString();
@@ -169,6 +167,8 @@ const messageHandler = ( msg ) => {
       return;
     }
   }
+
+  lastTextChannel = msg.channel;
 
   tidal.evaluate( code );
 };
