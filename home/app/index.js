@@ -107,7 +107,13 @@ const messageHandler = ( msg ) => {
     return;
   }
 
+  // it cannot be in two servers at once
   const guild = msg.guild;
+  if ( currentConnection?.channel.guild !== msg.guild ) {
+    msg.reply( '\n🙇 I\'m currently on an another server!' );
+    return;
+  }
+
   if ( !currentConnection ) {
     const user = msg.author;
 
@@ -162,9 +168,6 @@ const messageHandler = ( msg ) => {
       msg.reply( '\n🤔 You seem not to be in any VC???' );
       return;
     }
-  } else if ( currentConnection.channel.guild !== msg.guild ) {
-    msg.reply( '\n🙇 I\'m currently on an another server!' );
-    return;
   }
 
   tidal.evaluate( code );
