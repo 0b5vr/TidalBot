@@ -11,6 +11,15 @@ client.on( 'ready', () => {
   } );
 } );
 
+client.on( 'error', ( error ) => {
+  console.error( 'An error occurred while starting Discord bot:' );
+  console.error( error );
+
+  client.destroy().then( () => {
+    process.exit();
+  } );
+} );
+
 let lastTextChannel = null;
 let currentConnection = null;
 
@@ -178,6 +187,8 @@ client.on( 'messageUpdate', ( _, msg ) => messageHandler( msg ) );
 
 client.login( process.env.TIDALBOT_TOKEN );
 process.on( 'SIGTERM', () => {
+  console.log( 'SIGTERM received' );
+
   client.destroy().then( () => {
     process.exit();
   } );
