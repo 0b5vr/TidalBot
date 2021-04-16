@@ -20,7 +20,7 @@ const Tidal = class {
     // == setup ghci ===========================================================
     this.cpGhci = cp.spawn(
       'stack',
-      [ 'ghci' ],
+      [ 'exec', '--package', 'tidal', '--', 'ghci' ],
       { cwd: __dirname }
     );
 

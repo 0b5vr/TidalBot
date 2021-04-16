@@ -86,11 +86,14 @@ RUN npm i
 
 # == setup stack, install Tidal ================================================
 WORKDIR $HOME/app
+ADD ./home/app/package.yaml $HOME/app/package.yaml
+ADD ./home/app/stack.yaml $HOME/app/stack.yaml
 RUN stack setup
 RUN stack install tidal-1.7.3
+# you also have to change package.yaml and stack.yaml when you bump the version of tidal!
 
 # == download BootTidal ========================================================
-RUN curl -sL https://raw.githubusercontent.com/tidalcycles/atom-tidalcycles/ab71768ff27bc427abab17977fc465d80041fdc2/lib/BootTidal.hs > $HOME/app/BootTidal.hs
+RUN curl -sL https://raw.githubusercontent.com/tidalcycles/Tidal/f49966f910a83f6507b8d426d46baf5c0678a903/BootTidal.hs > $HOME/app/BootTidal.hs
 
 # == send some files ===========================================================
 ADD ./home $HOME
