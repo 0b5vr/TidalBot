@@ -2,10 +2,10 @@
   "name": "tidal-bot",
   "version": "1.0.0",
   "scripts": {
-    "build": "docker build -t tidal-bot .",
-    "cleanbuild": "docker build --no-cache -t tidal-bot .",
-    "start": "docker run -it --env-file .env --rm tidal-bot",
-    "shell": "docker run -it --env-file .env --entrypoint=bash tidal-bot"
+    "build": "docker build -t fmscat/tidal-bot .",
+    "cleanbuild": "docker build --no-cache -t fmscat/tidal-bot .",
+    "start": "docker run -it --env-file .env --rm fmscat/tidal-bot",
+    "shell": "docker run -it --env-file .env --entrypoint=bash fmscat/tidal-bot"
   },
   "devDependencies": {
     "@types/node": "^14.0.27",
