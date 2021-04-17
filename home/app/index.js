@@ -1,6 +1,8 @@
 const path = require( 'path' );
+const Streamer = require( './streamer' );
+const Tidal = require( './tidal' );
 
-// == setup discord ============================================================
+// == setup discord ================================================================================
 const Discord = require( 'discord.js' );
 const client = new Discord.Client();
 
@@ -15,68 +17,29 @@ client.on( 'error', ( error ) => {
   console.error( 'An error occurred while starting Discord bot:' );
   console.error( error );
 
-  client.destroy().then( () => {
-    process.exit();
-  } );
+  client.destroy();
+  process.exit();
 } );
 
 let lastTextChannel = null;
 let currentConnection = null;
 
-// == setup jack ===============================================================
-const BUFFER_SIZE = Math.pow( 2, 16 );
-const CHUNK_SIZE = 256;
+// == setup streamer ===============================================================================
+const streamer = new Streamer();
+const jackClientName = 'node';
 
-let streamReadIndex = 0;
-let streamWriteIndex = 0;
-let streamBufferSize = 0;
-const streamBuffer = new Int16Array( BUFFER_SIZE );
+// == setup tidal ==================================================================================
+const tidal = new Tidal();
+const bootTidalPath =  path.resolve( __dirname, 'BootTidal.hs' ) ;
 
-const stream = new require( 'stream' ).Readable( {
-  read( size ) {
-    for ( let i = 0; i < size / 2 / CHUNK_SIZE; i ++ ) {
-      if ( CHUNK_SIZE < streamBufferSize ) {
-        this.push( Buffer.from( streamBuffer.buffer, streamReadIndex * 2, CHUNK_SIZE * 2 ) );
-
-        streamReadIndex = ( streamReadIndex + CHUNK_SIZE ) % BUFFER_SIZE;
-        streamBufferSize -= CHUNK_SIZE;
-
-        // fast forward
-        if ( BUFFER_SIZE * 0.75 < streamBufferSize ) {
-          streamReadIndex = ( streamReadIndex + CHUNK_SIZE ) % BUFFER_SIZE;
-          streamBufferSize -= CHUNK_SIZE;
-        }
-      } else {
-        this.push( Buffer.alloc( CHUNK_SIZE * 2 ) );
-      }
-    }
-  }
-} );
-
-const jack = require( './jack-audio' );
-jack.bind( ( nFrames, buffer ) => {
-  for ( let i = 0; i < nFrames; i ++ ) {
-    if ( BUFFER_SIZE <= streamBufferSize ) { break; }
-    streamBuffer[ streamWriteIndex + 0 ] = parseInt( buffer[ 0 ][ i ] * 32767 );
-    streamBuffer[ streamWriteIndex + 1 ] = parseInt( buffer[ 1 ][ i ] * 32767 );
-    streamWriteIndex = ( streamWriteIndex + 2 ) % BUFFER_SIZE;
-    streamBufferSize += 2;
-  }
-} );
-jack.start( 'node' );
-
-// == setup tidal ==============================================================
-const Tidal = require( './tidal' );
-const tidal = new Tidal( path.resolve( __dirname, 'BootTidal.hs' ) );
-
-// == log handler ==============================================================
+// == log handler ==================================================================================
 tidal.on( 'log', ( msg ) => {
   if ( lastTextChannel ) {
     lastTextChannel.send( `\`\`\`\n${msg}\n\`\`\`` );
   }
 } );
 
-// == sclog handler ============================================================
+// == sclog handler ================================================================================
 const scLogHandler = ( msg ) => {
   if ( msg.toString().includes( 'sc-log' ) ) {
     msg.channel.send(
@@ -87,13 +50,22 @@ const scLogHandler = ( msg ) => {
   return false;
 };
 
-// == uh =======================================================================
+// == uh ===========================================================================================
 /**
  * @param {Discord.Message} msg
  */
-const messageHandler = ( msg ) => {
+const messageHandler = async ( msg ) => {
   const mentioned = msg.mentions.users.some( ( u ) => u.id === client.user.id );
   if ( !mentioned ) { return; }
+
+  // remove previous reactions
+  await Promise.all(
+    msg.reactions.cache.map( async ( reaction ) => {
+      if ( reaction.users.cache.has( client.user.id ) ) {
+        await reaction.users.remove( client.user.id );
+      }
+    } )
+  );
 
   if ( scLogHandler( msg ) ) { return; }
 
@@ -102,15 +74,17 @@ const messageHandler = ( msg ) => {
 
   if ( !match ) {
     msg.reply( '\n🤔 Unrecognized. Make sure your code is inside of a code block (use triple backquotes)!' );
+    msg.react( '🤔' );
     return;
   }
 
   const code = match[ 1 ];
-  console.log( code );
+  console.log( `${ msg.author.tag }: ${ code }` );
 
   // temp: to prevent dangerous things
   if ( code.includes( 'import' ) ) {
     msg.reply( '\n<@232233105040211969>' );
+    msg.react( '🚨' );
     return;
   }
 
@@ -118,6 +92,7 @@ const messageHandler = ( msg ) => {
   const guild = msg.guild;
   if ( currentConnection && currentConnection.channel.guild !== msg.guild ) {
     msg.reply( '\n🙇 I\'m currently on an another server!' );
+    msg.react( '🙇' );
     return;
   }
 
@@ -139,10 +114,20 @@ const messageHandler = ( msg ) => {
             status: 'online'
           } );
 
-          // == stream audio ===================================================
-          currentConnection.play( stream, { type: 'converted', volume: false, highWaterMark: 1 } );
+          currentConnection.on( 'disconnect', () => {
+            tidal.stop();
+            streamer.stop();
+          } );
 
-          // == when all members left... =======================================
+          // == stream audio =======================================================================
+          streamer.start( jackClientName );
+          tidal.start( bootTidalPath );
+          currentConnection.play(
+            streamer.stream,
+            { type: 'converted', volume: false, highWaterMark: 1 },
+          );
+
+          // == when all members left... ===========================================================
           const update = () => {
             const isAnyoneThere = ch.members.some(
               ( u ) => u.id !== client.user.id
@@ -152,8 +137,9 @@ const messageHandler = ( msg ) => {
               if ( lastTextChannel ) {
                 lastTextChannel.send( '👋 All users left, bye' );
                 lastTextChannel = null;
-                tidal.hush();
               }
+
+              tidal.hush();
 
               currentConnection.disconnect();
               currentConnection = null;
@@ -173,6 +159,7 @@ const messageHandler = ( msg ) => {
 
     if ( nope ) {
       msg.reply( '\n🤔 You seem not to be in any VC???' );
+      msg.react( '🤔' );
       return;
     }
   }
@@ -180,6 +167,7 @@ const messageHandler = ( msg ) => {
   lastTextChannel = msg.channel;
 
   tidal.evaluate( code );
+  msg.react( '✅' );
 };
 
 client.on( 'message', ( msg ) => messageHandler( msg ) );
@@ -189,7 +177,9 @@ client.login( process.env.TIDALBOT_TOKEN );
 process.on( 'SIGTERM', () => {
   console.log( 'SIGTERM received' );
 
-  client.destroy().then( () => {
-    process.exit();
-  } );
+  tidal.stop();
+  streamer.stop();
+
+  client.destroy();
+  process.exit();
 } );

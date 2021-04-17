@@ -1,46 +1,14 @@
 const cp = require( 'child_process' );
 
 const Tidal = class {
-  constructor ( bootPath ) {
+  constructor() {
     this.listeners = {}; // e.g.: { "stdout": [ func, func ], "stderr": [ func ] }
 
-    this.dead = false;
+    this.evalQueue = []; // codes being sent before init
 
-    // == setup sclang =========================================================
-    this.cpSc = cp.spawn( 'sclang' );
+    this.isReady = false;
 
-    this.cpSc.stderr.on( 'data', ( data ) => {
-      this.emit( 'sc-stderr', data.toString( 'utf8' ) );
-    } );
-
-    this.cpSc.stdout.on( 'data', ( data ) => {
-      this.emit( 'sc-stdout', data.toString( 'utf8' ) );
-    } );
-
-    // == setup ghci ===========================================================
-    this.cpGhci = cp.spawn(
-      'stack',
-      [ 'exec', '--package', 'tidal', '--', 'ghci' ],
-      { cwd: __dirname }
-    );
-
-    this.cpGhci.stderr.on( 'data', ( data ) => {
-      process.stderr.write( data );
-      this.emit( 'tidal-stderr', data.toString( 'utf8' ) );
-    } );
-
-    this.cpGhci.stdout.on( 'data', ( data ) => {
-      process.stdout.write( data );
-      this.emit( 'tidal-stdout', data.toString( 'utf8' ) );
-    } );
-
-    // == execute bootup commands ==============================================
-    this.sendLine( `:script ${bootPath}` );
-
-    // == ready! ===============================================================
-    this.emit( 'ready' );
-
-    // == chunky tidal stdout ==================================================
+    // == chunky tidal stdout ======================================================================
     {
       let str = '';
       let date = 0;
@@ -52,8 +20,8 @@ const Tidal = class {
         date = Date.now();
       };
 
-      this.on( 'tidal-stdout', append );
-      this.on( 'tidal-stderr', append );
+      this.on( 'ghci-stdout', append );
+      this.on( 'ghci-stderr', append );
 
       const update = () => {
         if ( str !== '' && date < Date.now() - 400 ) {
@@ -65,7 +33,7 @@ const Tidal = class {
       update();
     }
 
-    // == sc stdout logger =====================================================
+    // == sc stdout logger =========================================================================
     this.scLog = '';
     {
       const append = ( msg ) => {
@@ -86,47 +54,119 @@ const Tidal = class {
     }
   }
 
-  kill () {
-    this.cpSc.kill();
-    this.cpGhci.kill();
-    this.dead = true;
+  start( bootTidalPath ) {
+    // == setup sclang =============================================================================
+    const cpSc = cp.spawn( 'sclang' );
 
-    this.emit( 'kill' );
+    cpSc.stderr.on( 'data', ( data ) => {
+      process.stderr.write( data );
+      this.emit( 'sc-stderr', data.toString( 'utf8' ) );
+    } );
+
+    cpSc.stdout.on( 'data', ( data ) => {
+      process.stdout.write( data );
+      this.emit( 'sc-stdout', data.toString( 'utf8' ) );
+    } );
+
+    this.cpSc = cpSc;
+
+    // == setup ghci ===============================================================================
+    const cpGhci = cp.spawn(
+      'stack',
+      [ 'exec', '--package', 'tidal', '--', 'ghci' ],
+      { cwd: __dirname }
+    );
+
+    cpGhci.stderr.on( 'data', ( data ) => {
+      process.stderr.write( data );
+      this.emit( 'ghci-stderr', data.toString( 'utf8' ) );
+    } );
+
+    cpGhci.stdout.on( 'data', ( data ) => {
+      process.stdout.write( data );
+      this.emit( 'ghci-stdout', data.toString( 'utf8' ) );
+    } );
+
+    this.cpGhci = cpGhci;
+
+    // == ready! ===================================================================================
+    this.isReady = true;
+    this.emit( 'ready' );
+
+    // == execute BootTidal ========================================================================
+    this.sendLine( `:script ${bootTidalPath}` );
+
+    // == evaluate evalQueue =======================================================================
+    this.evalQueue.forEach( ( code ) => this.evaluate( code ) );
+    this.evalQueue = [];
   }
 
-  sendLine ( line ) {
-    if ( this.dead ) { return; }
+  stop() {
+    this.isReady = false;
+
+    this.cpGhci.stdin.write( ':quit\n' );
+    this.cpGhci = null;
+
+    this.cpSc.stdin.write( '0.exit\n' );
+    this.cpSc = null;
+
+    this.emit( 'stop' );
+  }
+
+  kill() {
+    this.isReady = false;
+
+    this.cpSc.kill();
+    this.cpSc = null;
+
+    this.cpGhci.kill();
+    this.cpGhci = null;
+
+    this.emit( 'stop' );
+  }
+
+  sendLine( line ) {
+    if ( !this.isReady ) {
+      console.warn( 'Tidal: ignoring sendLine because it is not ready' );
+      return;
+    }
 
     this.cpGhci.stdin.write( line );
     this.cpGhci.stdin.write( '\n' );
   }
 
-  evaluate ( code ) {
-    if ( this.dead ) { return; }
+  evaluate( code ) {
+    if ( !this.isReady ) {
+      this.evalQueue.push( code );
+      return;
+    }
 
     this.sendLine( ':{' );
     code.split( '\n' ).map( ( line ) => this.sendLine( line ) );
     this.sendLine( ':}' );
   }
 
-  hush () {
-    if ( this.dead ) { return; }
+  hush() {
+    if ( !this.isReady ) {
+      console.warn( 'Tidal: ignoring hush because it is not ready' );
+      return;
+    }
 
     this.evaluate( 'hush' );
     this.emit( 'hush' );
   }
 
-  getScLog () {
+  getScLog() {
     return this.scLog;
   }
 
-  emit ( name, ...val ) {
+  emit( name, ...val ) {
     if ( !this.listeners[ name ] ) { return; }
 
     this.listeners[ name ].map( ( func ) => func( val ) );
   }
 
-  on ( name, func ) {
+  on( name, func ) {
     if ( !this.listeners[ name ] ) {
       this.listeners[ name ] = [];
     }
@@ -134,7 +174,7 @@ const Tidal = class {
     this.listeners[ name ].push( func );
   }
 
-  off ( name, func ) {
+  off( name, func ) {
     if ( !this.listeners[ name ] ) { return; }
 
     const index = this.listeners[ name ].indexOf( func );
