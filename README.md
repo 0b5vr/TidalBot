@@ -27,6 +27,9 @@ Play with TidalCycles in Discord voice chat!!
 
 ## How to use
 
+- Invite the bot:
+  `https://discord.com/oauth2/authorize?client_id=<YOUR ID HERE>&scope=bot&permissions=36703232`
+
 - Join in any VC
 - Mention TidalBot along with your code (code must be in code blocks):
   > @TidalBot
