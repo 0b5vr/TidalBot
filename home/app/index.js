@@ -4,7 +4,10 @@ const Tidal = require( './tidal' );
 
 // == setup discord ================================================================================
 const Discord = require( 'discord.js' );
-const client = new Discord.Client();
+const client = new Discord.Client( {
+  messageCacheLifetime: 300,
+  messageSweepInterval: 30,
+} );
 
 client.on( 'ready', () => {
   console.log( 'Discord bot is working!' );
