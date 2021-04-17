@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^12.3.1",
-    "opusscript": "^0.0.7"
+    "@discordjs/opus": "^0.5.0",
+    "discord.js": "^12.5.3"
   }
 }
