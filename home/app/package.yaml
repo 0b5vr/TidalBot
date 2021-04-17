@@ -1,2 +1,4 @@
+name: app
+
 dependencies:
   - tidal == 1.7.3

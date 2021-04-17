@@ -1,8 +1,4 @@
-resolver:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/9.yaml
-
-  packages:
-  - .
+resolver: lts-17.9
 
 extra-deps:
   - tidal-1.7.3
