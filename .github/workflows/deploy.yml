@@ -1,0 +1,50 @@
+name: Deploy
+on:
+  push:
+    branches:
+      - master
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/tidal-bot
+  COMPOSE_SERVICE: tidal-bot
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Docker Images
+        run: |
+          docker login \
+            -u ${{ secrets.DOCKER_USERNAME }} \
+            -p ${{ secrets.DOCKER_TOKEN }}
+          docker buildx build \
+            --cache-from=${DOCKER_IMAGE}:cache \
+            --cache-to=${DOCKER_IMAGE}:cache \
+            --platform linux/amd64 \
+            -t $DOCKER_IMAGE:latest \
+            --push \
+            .
+      - name: Notify on Discord (Failure)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: |
+            🚨 **Something went wrong while deploying** 🚨
+            <https://github.com/${{ github.repository }}/commit/${{ github.sha }}>
+      - name: Notify on Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: |
+            Deployed successfully
+            <https://github.com/${{ github.repository }}/commit/${{ github.sha }}>
