@@ -81,7 +81,9 @@ RUN echo 'include( "https://github.com/FMS-Cat/Dirt-Samples" );' | sclang
 RUN echo 'include( "SuperDirt" );' | sclang
 
 # == setup node app ============================================================
+WORKDIR $HOME/app
 ADD ./home/app/package.json $HOME/app/package.json
+ADD ./home/app/package-lock.json $HOME/app/package-lock.json
 RUN npm i
 
 # == setup stack, install Tidal ================================================
