@@ -77,7 +77,7 @@ WORKDIR $HOME
 RUN rm -rf sc3-plugins supercollider
 
 # == pull SuperDirt and its samples ============================================
-RUN echo 'include( "https://github.com/FMS-Cat/Dirt-Samples" );' | sclang
+RUN echo 'include( "https://github.com/0b5vr/Dirt-Samples" );' | sclang
 RUN echo 'include( "SuperDirt" );' | sclang
 
 # == setup node app ============================================================
