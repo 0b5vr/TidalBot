@@ -1,6 +1,7 @@
 const path = require( 'path' );
 const Streamer = require( './streamer' );
 const Tidal = require( './tidal' );
+const parseMessage = require( './parseMessage' );
 
 // == setup discord ================================================================================
 const Discord = require( 'discord.js' );
@@ -42,17 +43,6 @@ tidal.on( 'log', ( msg ) => {
   }
 } );
 
-// == sclog handler ================================================================================
-const scLogHandler = ( msg ) => {
-  if ( msg.toString().includes( 'sc-log' ) ) {
-    msg.channel.send(
-      `🌀 SuperCollider stdout / stderr:\n\`\`\`\n${ tidal.getScLog() }\n\`\`\``
-    );
-    return true;
-  }
-  return false;
-};
-
 // == uh ===========================================================================================
 /**
  * @param {Discord.Message} msg
@@ -70,23 +60,47 @@ const messageHandler = async ( msg ) => {
     } )
   );
 
-  if ( scLogHandler( msg ) ) { return; }
+  const str = msg.toString()
+    .replace( `<@${ client.user.id }>`, '' )
+    .trim();
 
-  const str = msg.toString();
-  const match = str.match( /```\s*([\S\s]+?)\s*```/m );
+  if ( str.startsWith( 'bye' ) ) {
+    if ( !currentConnection ) {
+      msg.reply( '\n🤔 I don\'t think I\'m in any VC right now' );
+      msg.react( '🤔' );
+      return;
+    }
 
-  if ( !match ) {
-    msg.reply( '\n🤔 Unrecognized. Make sure your code is inside of a code block (use triple backquotes)!' );
-    msg.react( '🤔' );
+    lastTextChannel = null;
+
+    tidal.hush();
+
+    currentConnection.disconnect();
+    currentConnection = null;
+    client.user.setPresence( {
+      status: 'idle'
+    } );
+
+    msg.reply( '👋 Bye' );
+    msg.react( '👋' );
     return;
   }
 
-  const code = match[ 1 ];
+  if ( str.startsWith( 'sc-log' ) ) {
+    msg.channel.send(
+      `🌀 SuperCollider stdout / stderr:\n\`\`\`\n${ tidal.getScLog() }\n\`\`\``
+    );
+    msg.react( '🌀' );
+    return;
+  }
+
+  const code = parseMessage( str );
+
   console.log( `${ msg.author.tag }: ${ code }` );
 
   // temp: to prevent dangerous things
   if ( code.includes( 'import' ) ) {
-    msg.reply( '\n<@232233105040211969>' );
+    msg.reply( '\n🚨 <@232233105040211969>' );
     msg.react( '🚨' );
     return;
   }
@@ -104,60 +118,58 @@ const messageHandler = async ( msg ) => {
 
     let nope = true;
     guild.channels.cache.map( ( ch ) => {
-      if (
-        ch.speakable && ch.joinable
-        && ch.members.some( ( u ) => u.id === user.id )
-      ) {
-        nope = false;
-        ch.join().then( ( conn ) => {
-          currentConnection = conn;
-          msg.reply( `\n🛰 I joined to ${currentConnection.channel} !` );
-          client.user.setPresence( {
-            game: { name: 'TidalCycles' },
-            status: 'online'
-          } );
+      const isValidVC = ch.speakable && ch.joinable && ch.members.some( ( u ) => u.id === user.id );
+      if ( !isValidVC ) { return; }
 
-          currentConnection.on( 'disconnect', () => {
-            tidal.stop();
-            streamer.stop();
-          } );
+      nope = false;
+      ch.join().then( ( conn ) => {
+        currentConnection = conn;
+        msg.reply( `\n🛰 I joined to ${currentConnection.channel} !` );
+        client.user.setPresence( {
+          game: { name: 'TidalCycles' },
+          status: 'online'
+        } );
 
-          // == stream audio =======================================================================
-          streamer.start( jackClientName );
-          tidal.start( bootTidalPath );
-          currentConnection.play(
-            streamer.stream,
-            { type: 'converted', volume: false, highWaterMark: 1 },
+        currentConnection.on( 'disconnect', () => {
+          tidal.stop();
+          streamer.stop();
+        } );
+
+        // == stream audio =======================================================================
+        streamer.start( jackClientName );
+        tidal.start( bootTidalPath );
+        currentConnection.play(
+          streamer.stream,
+          { type: 'converted', volume: false, highWaterMark: 1 },
+        );
+
+        // == when all members left... ===========================================================
+        const update = () => {
+          const isAnyoneThere = ch.members.some(
+            ( u ) => u.id !== client.user.id
           );
 
-          // == when all members left... ===========================================================
-          const update = () => {
-            const isAnyoneThere = ch.members.some(
-              ( u ) => u.id !== client.user.id
-            );
-
-            if ( !isAnyoneThere ) {
-              if ( lastTextChannel ) {
-                lastTextChannel.send( '👋 All users left, bye' );
-                lastTextChannel = null;
-              }
-
-              tidal.hush();
-
-              currentConnection.disconnect();
-              currentConnection = null;
-              client.user.setPresence( {
-                status: 'idle'
-              } );
+          if ( !isAnyoneThere ) {
+            if ( lastTextChannel ) {
+              lastTextChannel.send( '👋 All users left, bye' );
+              lastTextChannel = null;
             }
 
-            if ( currentConnection ) {
-              setTimeout( update, 5000 );
-            }
-          };
-          update();
-        } );
-      }
+            tidal.hush();
+
+            currentConnection.disconnect();
+            currentConnection = null;
+            client.user.setPresence( {
+              status: 'idle'
+            } );
+          }
+
+          if ( currentConnection ) {
+            setTimeout( update, 5000 );
+          }
+        };
+        update();
+      } );
     } );
 
     if ( nope ) {
