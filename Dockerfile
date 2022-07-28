@@ -53,7 +53,10 @@ RUN rm -rf /var/lib/apt/lists/*
 # Ref: https://github.com/supercollider/supercollider/wiki/Installing-SuperCollider-from-source-on-Ubuntu
 # Ref: https://github.com/supercollider/sc3-plugins
 WORKDIR $HOME
-RUN git clone --depth=1 -b Version-3.11.0 --recursive https://github.com/supercollider/supercollider.git
+# This does not work since github stopped support for git:// protocols
+# and the tag Version-3.12.2 relies on git:// in .gitmodules (shoutouts to feedbacker)
+# RUN git clone --depth=1 -b Version-3.12.2 --recursive https://github.com/supercollider/supercollider.git
+RUN git clone --depth=1 -b 3.12 --recursive https://github.com/supercollider/supercollider.git
 WORKDIR $HOME/supercollider
 RUN git submodule update --init
 RUN mkdir -p $HOME/supercollider/build
