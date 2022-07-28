@@ -31,18 +31,24 @@ Play with TidalCycles in Discord voice chat!!
   `https://discord.com/oauth2/authorize?client_id=<YOUR ID HERE>&scope=bot&permissions=36703232`
 
 - Join in any VC
-- Mention TidalBot along with your code (code must be in code blocks):
+- Mention TidalBot along with your code:
   > @TidalBot
   > ```
   > d1
   >   $ sound "bd bd"
   > ```
-- Now TidalBot joins in your vc automatically and plays cool music for you!
+- Now TidalBot joins in your VC automatically and plays cool music for you!
 
-### Other
+### Special commands
 
+- If you want to let TidalBot leave your VC, type this:
+  > @TidalBot bye
 - If you want to see SuperCollider's log, type this:
   > @TidalBot sc-log
+
+## nice-to-pin.md
+
+You might want to pin the content of [nice-to-pin.md](./nice-to-pin.md) on your Discord channel.
 
 ## License
 
